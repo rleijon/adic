@@ -16,6 +16,7 @@ type ColumnReader interface {
 	FilterAll(ColumnFilter) ([]int64, []interface{})
 	FilterIndices([]int64, ColumnFilter) ([]int64, []interface{})
 	ReadIndices([]int64) []interface{}
+	Count() int
 	Start()
 }
 
@@ -44,6 +45,12 @@ func getColumnReader(dir string, field types.Field) ColumnReader {
 		}
 	}
 	return nil
+}
+func (w *AdicReader) Count() int {
+	for _, v := range w.columnReaders {
+		return v.Count()
+	}
+	return 0
 }
 
 func (w *AdicReader) Read(f *Filter) ([]*types.Object, error) {
@@ -174,6 +181,10 @@ func (w *IntColumnReader) ReadAt(i int64) (interface{}, error) {
 	return int32(v), e
 }
 
+func (w *IntColumnReader) Count() int {
+	return w.Reader.Len() / 4
+}
+
 type StringColumnReader struct {
 	Dir         string
 	ColumnName  string
@@ -190,6 +201,10 @@ func (w *StringColumnReader) ReadLatest() (interface{}, error) {
 	bts := make([]byte, lastOffset-firstOffset)
 	w.Reader.ReadAt(bts, int64(firstOffset))
 	return string(bts), e
+}
+
+func (w *StringColumnReader) Count() int {
+	return w.IndexReader.Len() / 4
 }
 
 func (w *StringColumnReader) ReadAt(i int64) (interface{}, error) {
